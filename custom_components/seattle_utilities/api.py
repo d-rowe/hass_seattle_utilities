@@ -7,10 +7,12 @@ from datetime import datetime, timedelta
 import aiohttp
 import async_timeout
 import asyncio
+import logging
 
 accept_html = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
 TIMEOUT = 10
 
+_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 class MyHTMLParser(HTMLParser):
     def __init__(self):
@@ -168,6 +170,7 @@ class SeattleUtilities:
         data = await self.__get_oracle_cookie(url)
         oracle_identity_data = await self.__get_oracle_cookie(
             data["url"], data["cookie"])
+        _LOGGER.debug(oracle_identity_data)
 
         parser = MyHTMLParser()
         parser.feed(oracle_identity_data["html"])
@@ -176,13 +179,16 @@ class SeattleUtilities:
         url = parser.get_form_url()
 
         data = await self.__submit_form(url, data)
+        _LOGGER.debug(data)
         text = await data.text()
         jsdata = self.get_data_from_js(text)
 
         data = await self.__do_authenticate(jsdata)
+        _LOGGER.debug(data)
 
         data = await self.__start_session(
             jsdata["baseUri"], data["authnToken"], oracle_identity_data["cookie"])
+        _LOGGER.debug(data)
 
         cookie = data.headers["Set-Cookie"]
 
@@ -191,9 +197,11 @@ class SeattleUtilities:
         parser.feed(text)
 
         data = parser.get_form_data()
+        _LOGGER.debug(data)
         url = parser.get_form_url()
 
         data = await self.__submit_form(url, data, cookie)
+        _LOGGER.debug(data)
         cookie = data.headers["Set-Cookie"]
 
         text = await data.text()
@@ -201,17 +209,20 @@ class SeattleUtilities:
         parser.feed(text)
 
         data = parser.get_form_data()
+        _LOGGER.debug(data)
         url = parser.get_form_url()
 
         form_data = await self.__submit_form(url, data, cookie)
+        _LOGGER.debug(form_data)
 
         data = {
-            "username": form_data.headers["Location"].rsplit("/", 1)[1],
-            "grant_type": "password",
+            "usertoken": form_data.headers["Location"].rsplit("/", 1)[1],
+            "grant_type": "authorization_code",
             "logintype": "sso"
         }
         response = await self.__submit_form_auth(
-            "https://myutilities.seattle.gov/rest/oauth/token", data)
+            "https://myutilities.seattle.gov/rest/auth/token", data)
+        _LOGGER.debug(response)
         self.auth_info = await response.json()
 
     async def get_accounts(self):
@@ -312,9 +323,10 @@ class SeattleUtilities:
     async def api_wrapper(
         self, method: str, url: str, json: dict = {}, data: dict = {}, headers: dict = {}, allow_redirects: bool = True
     ) -> dict:
+        _LOGGER.debug('method: {}, url: {}, json: {}, data: {}, headers: {}, allow_redirects: {}'.format(method, url, json, data, headers, allow_redirects))
         """Get information from the API."""
         try:
-            async with async_timeout.timeout(TIMEOUT, loop=asyncio.get_event_loop()):
+            async with async_timeout.timeout(TIMEOUT):
                 if method == "get":
                     return await self._session.get(url, headers=headers, allow_redirects=allow_redirects)
 
