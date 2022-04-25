@@ -24,7 +24,7 @@ from .const import (
     STARTUP_MESSAGE,
 )
 
-SCAN_INTERVAL = timedelta(hours=12)
+SCAN_INTERVAL = timedelta(hours=4)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 

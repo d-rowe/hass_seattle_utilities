@@ -1,3 +1,4 @@
+from time import time
 import requests
 from html.parser import HTMLParser
 from urllib.parse import urlencode
@@ -316,7 +317,10 @@ class SeattleUtilities:
         meter_data = await self.get_daily_data(account, bill["serviceId"], time_yesterday_string, time_now_string, meter)
         for day in meter_data["history"]:
           if day["chargeDateRaw"] == raw_charge_day:
-            self.latest_data[meter] = day["billedConsumption"]
+            self.latest_data[meter] = {
+                'value': day["billedConsumption"],
+                'last_reset': datetime(time_yesterday.year, time_yesterday.month, time_yesterday.day, 0, 0, 0),
+            }
 
       return self.latest_data
 
