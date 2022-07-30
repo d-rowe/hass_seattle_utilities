@@ -28,7 +28,8 @@ SCAN_INTERVAL = timedelta(hours=4)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
-async def async_setup(hass: HomeAssistant, config: Config):
+
+async def async_setup(_hass: HomeAssistant, _config: Config):
     """Set up this integration using YAML is not supported."""
     return True
 
@@ -56,7 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     for platform in PLATFORMS:
         if entry.options.get(platform, True):
             coordinator.platforms.append(platform)
-            hass.async_add_job(
+            await hass.async_add_job(
                 hass.config_entries.async_forward_entry_setup(entry, platform)
             )
 
@@ -68,13 +69,12 @@ class BlueprintDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
 
     def __init__(
-        self, hass: HomeAssistant, client: SeattleUtilities
+            self, hass: HomeAssistant, client: SeattleUtilities
     ) -> None:
         """Initialize."""
         self.api = client
         self.platforms = []
-
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
+        super(BlueprintDataUpdateCoordinator, self).__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
     async def _async_update_data(self):
         """Update data via library."""

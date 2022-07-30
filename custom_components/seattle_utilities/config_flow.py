@@ -12,6 +12,7 @@ from .const import (
     PLATFORMS,
 )
 
+
 class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Blueprint."""
 

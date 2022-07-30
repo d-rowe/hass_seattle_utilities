@@ -4,19 +4,21 @@ from .entity import IntegrationBlueprintEntity
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import ENERGY_KILO_WATT_HOUR
 
+
 async def async_setup_entry(hass, entry, async_add_devices):
     """Setup sensor platform."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     for meter in coordinator.data:
-      async_add_devices([KWHSensor(coordinator, entry, meter)])
+        async_add_devices([KWHSensor(coordinator, entry, meter)])
+
 
 class KWHSensor(IntegrationBlueprintEntity):
     """Seattle Utility KWH Sensor class."""
 
     def __init__(self, coordinator, entry, meter_id):
-      super().__init__(coordinator, entry)
-      self.meter_id = meter_id
-      self._attr_native_unit_of_measurement = ENERGY_KILO_WATT_HOUR
+        super().__init__(coordinator, entry)
+        self.meter_id = meter_id
+        self._attr_native_unit_of_measurement = ENERGY_KILO_WATT_HOUR
 
     @property
     def unique_id(self):

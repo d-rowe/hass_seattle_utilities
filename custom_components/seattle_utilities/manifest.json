@@ -3,11 +3,12 @@
   "name": "Seattle Utilities",
   "documentation": "https://github.com/sebirdman/hass_seattle_utilities",
   "issue_tracker": "https://github.com/sebirdman/hass_seattle_utilities/issues",
+  "iot_class": "cloud_polling",
   "dependencies": [],
   "config_flow": true,
   "codeowners": [
-    "@ludeeus"
+    "@jrjparks"
   ],
   "requirements": [],
-  "version": "1.0.0"
+  "version": "0.0.1"
 }

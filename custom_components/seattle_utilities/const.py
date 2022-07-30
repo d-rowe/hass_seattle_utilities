@@ -22,7 +22,6 @@ CONF_PASSWORD = "password"
 # Defaults
 DEFAULT_NAME = DOMAIN
 
-
 STARTUP_MESSAGE = f"""
 -------------------------------------------------------------------
 {NAME}
