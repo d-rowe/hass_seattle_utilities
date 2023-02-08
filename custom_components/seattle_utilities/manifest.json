@@ -1,14 +1,15 @@
 {
   "domain": "seattle_utilities",
   "name": "Seattle Utilities",
-  "documentation": "https://github.com/sebirdman/hass_seattle_utilities",
-  "issue_tracker": "https://github.com/sebirdman/hass_seattle_utilities/issues",
-  "iot_class": "cloud_polling",
-  "dependencies": [],
   "config_flow": true,
+  "documentation": "https://github.com/jrjparks/hass_seattle_utilities",
+  "requirements": [],
   "codeowners": [
     "@jrjparks"
   ],
-  "requirements": [],
-  "version": "0.0.1"
+  "iot_class": "cloud_polling",
+  "loggers": [
+    "seattle_utilities"
+  ],
+  "version": "0.0.2"
 }

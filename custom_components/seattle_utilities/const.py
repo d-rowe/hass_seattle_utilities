@@ -1,26 +1,37 @@
+import logging
+from typing import Final
+
 """Constants for seattle_utilities."""
 # Base component constants
-NAME = "Seattle Utilities"
-DOMAIN = "seattle_utilities"
-DOMAIN_DATA = f"{DOMAIN}_data"
-VERSION = "0.0.1"
+NAME: Final = "Seattle Utilities"
+DOMAIN: Final = "seattle_utilities"
+LOGGER = logging.getLogger(__package__)
+DOMAIN_DATA: Final = f"{DOMAIN}_data"
+VERSION = "0.0.2"
 ATTRIBUTION = "Data provided by Seattle Utilities"
-ISSUE_URL = "https://github.com/sebirdman/hass_seattle_utilities/issues"
+ISSUE_URL = "https://github.com/jrjparks/hass_seattle_utilities/issues"
 
 # Icons
-ICON = "mdi:power-plug"
+ICON_ENERGY = "mdi:power-plug"
+ICON_COST = "mdi:currency-usd"
 
 # Platforms
 SENSOR = "sensor"
 PLATFORMS = [SENSOR]
 
 # Configuration and options
-CONF_ENABLED = "enabled"
-CONF_USERNAME = "username"
-CONF_PASSWORD = "password"
+CONF_BASE_COST = "base_cost"
+CONF_1ST_BLOCK_COST = "first_block_cost"
+CONF_2ND_BLOCK_COST = "second_block_cost"
+CONF_MISC_PER_KWH_COST = "misc_per_kWh_cost"
 
 # Defaults
-DEFAULT_NAME = DOMAIN
+# Pulled 2023-02-07 from https://seattle.gov/city-light/residential-services/billing-information/rates
+# Defaults are for Seattle
+DEFAULT_BASE_COST = 0.2301
+DEFAULT_1ST_BLOCK_COST = 0.1132
+DEFAULT_2ND_BLOCK_COST = 0.1307
+DEFAULT_MISC_PER_KWH_COST = 0.0
 
 STARTUP_MESSAGE = f"""
 -------------------------------------------------------------------

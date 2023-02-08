@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "base_cost": "[%key:common::config_flow::data::base_cost%]",
+          "first_block_cost": "[%key:common::config_flow::data::first_block_cost%]",
+          "second_block_cost": "[%key:common::config_flow::data::second_block_cost%]",
+          "misc_per_kWh_cost": "[%key:common::config_flow::data::misc_per_kWh_cost%]"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "invalid_meter": "[%key:common::config_flow::error::invalid_meter%]",
+      "invalid_account": "Account ID should be a 9 digit number",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "single_instance_allowed": "[%key:common::config_flow::abort::single_instance_allowed%]"
+    }
+  }
+}
