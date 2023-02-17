@@ -8,8 +8,6 @@
     "@jrjparks"
   ],
   "iot_class": "cloud_polling",
-  "loggers": [
-    "seattle_utilities"
-  ],
+  "loggers": [],
   "version": "0.0.2"
 }

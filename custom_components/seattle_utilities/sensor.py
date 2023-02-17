@@ -42,13 +42,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             # Fetch Seattle Utility energy data
             if energy_client.is_token_expired:
                 LOGGER.info("Client Token has expired, logging in...")
-                await hass.async_add_executor_job(
+                _ = await hass.async_add_executor_job(
                     energy_client.login,
                     entry.data[CONF_USERNAME],
                     entry.data[CONF_PASSWORD],
                 )
-            async with async_timeout.timeout(60):
+            LOGGER.info("Requesting latest data...")
+            async with async_timeout.timeout(30):
                 daily_usage: Dict[str, MeterUsage] = await hass.async_add_executor_job(energy_client.get_latest_usage)
+                LOGGER.info(f"Got latest data: {daily_usage}")
                 return daily_usage
         except KeyError as key_err:
             raise UpdateFailed("Unable to locate meter") from key_err
@@ -62,11 +64,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         LOGGER,
         name="sensor",
         update_method=async_update_data,
-        update_interval=timedelta(hours=12),
+        update_interval=timedelta(minutes=15),
     )
 
     # Fetch initial data so we have data when entities subscribe
-    await coordinator.async_refresh()
+    _ = await coordinator.async_refresh()
 
     meters: Dict[str, Meter] = await hass.async_add_executor_job(energy_client.get_meters)
     for _, meter in meters.items():
@@ -79,52 +81,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class SeattleUtilityEnergyEntity(SensorEntity):
     """Implementation of a SCL Energy Usage sensor."""
 
-    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_icon = ICON_ENERGY
     _attr_attribution = ATTRIBUTION
     _attr_should_poll = False
     _attr_state_class = SensorStateClass.TOTAL
     _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_precision = 2
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_native_value = None
+    _attr_last_reset = None
 
     def __init__(self, coordinator, meter: Meter):
         """Initialize the SCL Energy Usage Entity class."""
         self.coordinator = coordinator
         self._meter = meter
-        self._state = None
 
     @property
     def name(self):
         """Return the name of the sensor."""
-        return f"{self.unique_id} SCL Meter"
+        return f"[{self._meter.id}] SCL Meter Usage"
 
     @property
     def unique_id(self):
         """Return sensor unique_id."""
         return ".".join([DOMAIN, self._meter.id, "usage"])
-
-    @property
-    def native_value(self):
-        """Return the state of the device."""
-        if self._state:
-            return f"{self._state.usage_kWh:.2f}"
-        return None
-
-    @property
-    def icon(self):
-        """Return icon."""
-        return ICON_ENERGY
-
-    @property
-    def usage(self):
-        """Return entity state."""
-        if self.meter_data:
-            return f"{self.meter_data.usage_kWh:.2f}"
-        return None
-
-    @property
-    def last_reset(self):
-        if self._state:
-            return self._state.date
-        return None
 
     @property
     def available(self):
@@ -139,11 +119,9 @@ class SeattleUtilityEnergyEntity(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self.async_write_ha_state)
-        )
-        if self.coordinator.data:
-            self._state = self.coordinator.data.get(self._meter.id, None)
+        await super().async_added_to_hass()
+        self._update_from_meter()
+        self.async_on_remove(self.coordinator.async_add_listener(self._update_from_meter))
 
     async def async_update(self) -> None:
         """Update the entity.
@@ -151,15 +129,25 @@ class SeattleUtilityEnergyEntity(SensorEntity):
         """
         await self.coordinator.async_request_refresh()
 
+    def _update_from_meter(self) -> None:
+        if self.meter_data is not None:
+            self._attr_native_value = self.meter_data.usage_kWh
+            self._attr_last_reset = self.meter_data.date
+        self.async_write_ha_state()
+
 
 class SeattleUtilityCostEntity(SensorEntity):
     """Implementation of a SCL Energy Cost sensor."""
 
-    _attr_native_unit_of_measurement = CURRENCY_DOLLAR
+    _attr_icon = ICON_COST
     _attr_attribution = ATTRIBUTION
     _attr_should_poll = False
     _attr_state_class = SensorStateClass.TOTAL
     _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_native_precision = 2
+    _attr_native_unit_of_measurement = CURRENCY_DOLLAR
+    _attr_native_value = None
+    _attr_last_reset = None
 
     def __init__(self, coordinator, meter: Meter):
         """Initialize the SCL Energy Cost Entity class."""
@@ -170,37 +158,12 @@ class SeattleUtilityCostEntity(SensorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        return f"{self.unique_id} SCL Meter Cost"
+        return f"[{self._meter.id}] SCL Meter Cost"
 
     @property
     def unique_id(self):
         """Return sensor unique_id."""
         return ".".join([DOMAIN, self._meter.id, "cost"])
-
-    @property
-    def native_value(self):
-        """Return the state of the device."""
-        if self._state:
-            return f"{self._state.cost:.2f}"
-        return None
-
-    @property
-    def icon(self):
-        """Return icon."""
-        return ICON_COST
-
-    @property
-    def usage(self):
-        """Return entity state."""
-        if self.meter_data:
-            return f"{self.meter_data.cost:.2f}"
-        return None
-
-    @property
-    def last_reset(self):
-        if self._state:
-            return self._state.date
-        return None
 
     @property
     def available(self):
@@ -215,14 +178,18 @@ class SeattleUtilityCostEntity(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self.async_write_ha_state)
-        )
-        if self.coordinator.data:
-            self._state = self.coordinator.data.get(self._meter.id, None)
+        await super().async_added_to_hass()
+        self._update_from_meter()
+        self.async_on_remove(self.coordinator.async_add_listener(self._update_from_meter))
 
     async def async_update(self) -> None:
         """Update the entity.
         Only used by the generic entity update service.
         """
         await self.coordinator.async_request_refresh()
+
+    def _update_from_meter(self) -> None:
+        if self.meter_data is not None:
+            self._attr_native_value = self.meter_data.cost
+            self._attr_last_reset = self.meter_data.date
+        self.async_write_ha_state()

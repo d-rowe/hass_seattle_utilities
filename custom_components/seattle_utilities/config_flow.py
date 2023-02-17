@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 
+import async_timeout
 import voluptuous as vol
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
@@ -44,17 +45,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     misc_per_kWh=float(user_input.get(CONF_MISC_PER_KWH_COST, DEFAULT_MISC_PER_KWH_COST)),
                 )
                 energy_client = SeattleUtilityClient(rates=energy_rate)
-                await self.hass.async_add_executor_job(
+                _ = await self.hass.async_add_executor_job(
                     energy_client.login,
                     user_input[CONF_USERNAME],
                     user_input[CONF_PASSWORD],
                 )
-                meters = await self.hass.async_add_executor_job(energy_client.get_meters)
-                if meters:
-                    return self.async_create_entry(
-                        title=NAME, data=user_input
-                    )
-                errors["base"] = "invalid_meter"
+                async with async_timeout.timeout(30):
+                    meters = await self.hass.async_add_executor_job(energy_client.get_meters)
+                    if meters:
+                        return self.async_create_entry(
+                            title=NAME, data=user_input
+                        )
+                errors["base"] = "lookup_failed"
             except ConnectionRefusedError:
                 errors["base"] = "invalid_auth"
             except ValueError:

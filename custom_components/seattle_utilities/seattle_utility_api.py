@@ -262,6 +262,7 @@ class SeattleUtilityClient(OracleClient):
         self._rates = rates
 
     def login(self, username: str, password: str):
+        self.LOGGER.info(f"Logging in...")
         super()._login(username=username, password=password,
                        authentication_url="https://login.seattle.gov/authenticate")
 
@@ -282,6 +283,7 @@ class SeattleUtilityClient(OracleClient):
             "customerId": self.user_customer_id,
             "csrId": self.username,
         }
+        self.LOGGER.info(f"Looking up accounts.")
         return self.request_payload("rest/account/list", data=payload)
 
     def get_account_holders(self, company_code, page=1) -> Dict[str, Any]:
@@ -293,6 +295,7 @@ class SeattleUtilityClient(OracleClient):
             "sortColumn": "DUED",
             "sortOrder": "DESC",
         }
+        self.LOGGER.info(f"Looking up account holders.")
         return self.request_payload("rest/account/list/some", data=payload)
 
     def get_bills(self, company_code, account: Account, current_bill_date: Any) -> Dict[str, Any]:
@@ -309,6 +312,7 @@ class SeattleUtilityClient(OracleClient):
             "currentBillDate": current_bill_date,
             "period": "3",
         }
+        self.LOGGER.info(f"Looking up bills for {account.account_number}.")
         return self.request_payload("rest/billing/comparison", data=payload)
 
     def get_daily_usage(self, meter: Meter, start: datetime, end: datetime):
@@ -322,6 +326,7 @@ class SeattleUtilityClient(OracleClient):
             "endDate": end.strftime("%m/%d/%Y"),
             "port": meter.id,
         }
+        self.LOGGER.info(f"Looking up daily usage for {meter.account.account_number}-{meter.id}.")
         daily_usage = self.request_payload("rest/usage/month", data=payload)
         daily_bill_usage = map(lambda day: MeterUsage(
             usage_kWh=float(day.get("billedConsumption")),
@@ -334,7 +339,7 @@ class SeattleUtilityClient(OracleClient):
 
     def get_meters(self) -> Dict[str, Meter]:
         meters = {}
-        self.LOGGER.debug("Looking up accounts")
+        self.LOGGER.info("Looking up meters.")
         accounts = self.get_accounts()
         for group in accounts.get("accountGroups"):
             company_code = group.get("name")
@@ -369,14 +374,17 @@ class SeattleUtilityClient(OracleClient):
         return meters
 
     def get_latest_meter_usage(self, meter: Meter):
-        now = datetime.combine(date.today(), datetime.max.time())
+        today = datetime.combine(date.today(), datetime.max.time())
         yesterday = datetime.combine(date.today() - timedelta(days=1), datetime.min.time())
         daily_usage = self.get_daily_usage(
             meter=meter,
             start=yesterday,
-            end=now,
+            end=today,
         )
-        return next(filter(lambda usage: usage.date.date() == yesterday.date(), daily_usage), None)
+        return next(reversed([
+            usage for usage in daily_usage
+            if bool(usage.usage_kWh) and yesterday <= usage.date <= today
+        ]), None)
 
     def get_latest_usage(self):
         meters = self.get_meters()
