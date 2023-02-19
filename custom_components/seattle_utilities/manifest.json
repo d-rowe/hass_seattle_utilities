@@ -9,5 +9,6 @@
   ],
   "iot_class": "cloud_polling",
   "loggers": [],
-  "version": "0.0.2"
+  "version": "0.0.2",
+  "integration_type": "hub"
 }
