@@ -64,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         LOGGER,
         name="sensor",
         update_method=async_update_data,
-        update_interval=timedelta(minutes=15),
+        update_interval=timedelta(hours=12),
     )
 
     # Fetch initial data so we have data when entities subscribe
